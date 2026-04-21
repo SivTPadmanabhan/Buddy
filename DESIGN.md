@@ -42,6 +42,7 @@ Buddy is a personal RAG (Retrieval-Augmented Generation) system that indexes doc
 | LLM | Google Gemini | Free tier: 15 RPM, 1M tokens/day |
 | Embeddings | Sentence Transformers | Local, all-MiniLM-L6-v2 |
 | OCR | Tesseract | Local, for scanned images |
+| Office docs | python-docx, python-pptx, openpyxl | Parse native MS Office formats |
 | Containerization | Docker + docker-compose | Multi-container setup |
 
 ## Project Structure
@@ -397,9 +398,14 @@ services:
 | Type | Handling |
 |------|----------|
 | Google Docs | Export as text via Drive API |
-| PDF | PyPDF2 or pdfplumber |
+| Google Sheets | Export as CSV via Drive API |
+| Google Slides | Export as text via Drive API |
+| PDF | pypdf |
+| Word (.docx) | python-docx |
+| PowerPoint (.pptx) | python-pptx |
+| Excel (.xlsx) | openpyxl |
 | Images (PNG, JPG) | Tesseract OCR |
-| Plain text / Markdown | Direct read |
+| Plain text / Markdown / CSV | Direct read |
 
 ### Chunking Parameters
 
