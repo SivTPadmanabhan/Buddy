@@ -272,11 +272,11 @@ pinecone_max_vectors: int = 80000      # Free tier: 100K
 - Integration test upserting and querying
 
 ### Checkpoint 6
-- [ ] Embeddings generate 384-dim vectors
-- [ ] Chunks upsert to Pinecone successfully
-- [ ] Search returns relevant chunks
-- [ ] Upsert blocked if vector limit reached
-- [ ] Health endpoint shows Pinecone connected + vector count
+- [x] Embeddings generate 384-dim vectors
+- [x] Chunks upsert to Pinecone successfully
+- [x] Search returns relevant chunks
+- [x] Upsert blocked if vector limit reached
+- [x] Health endpoint shows Pinecone connected + vector count
 
 ---
 
