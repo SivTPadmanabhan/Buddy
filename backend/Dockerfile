@@ -14,7 +14,12 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements first (for Docker layer caching)
 COPY requirements.txt .
 
-# Install Python dependencies
+# Install CPU-only torch first to avoid pulling ~3GB of NVIDIA CUDA wheels
+# that the default torch 2.x pulls in on Linux. sentence-transformers works
+# fine on CPU-only torch for this project's scale.
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch==2.2.2
+
+# Install remaining Python dependencies (pip will see torch is already satisfied)
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
