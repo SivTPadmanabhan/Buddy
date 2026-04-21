@@ -22,7 +22,9 @@ def main() -> None:
         token_path="data/drive_token.json",
     )
     flow = InstalledAppFlow.from_client_config(svc._client_config(), SCOPES)
-    creds = flow.run_local_server(port=OAUTH_PORT, open_browser=False)
+    creds = flow.run_local_server(
+        host="localhost", bind_addr="0.0.0.0", port=OAUTH_PORT, open_browser=False
+    )
     svc._save_creds(creds)
     print(f"\nToken saved to {svc.token_path}")
 

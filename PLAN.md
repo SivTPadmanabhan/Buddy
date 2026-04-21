@@ -201,8 +201,12 @@ pinecone_max_vectors: int = 80000      # Free tier: 100K
 ### Steps
 
 5.1. **document.py service**
-- `load_pdf(content)` - extract text from PDF bytes
-- `load_text(content)` - handle plain text
+- `load_pdf(content)` - extract text from PDF bytes (pypdf)
+- `load_docx(content)` - extract text from Word bytes (python-docx)
+- `load_pptx(content)` - extract text from PowerPoint bytes (python-pptx)
+- `load_xlsx(content)` - extract text from Excel bytes (openpyxl)
+- `load_text(content)` - handle plain text (also for Google export
+  output: text/plain and text/csv)
 - `chunk_text(text)` - split into ~500 token chunks with overlap
 
 5.2. **ocr.py service**
@@ -211,16 +215,23 @@ pinecone_max_vectors: int = 80000      # Free tier: 100K
 - Return confidence score with text
 
 5.3. **File type router**
-- Detect file type from extension/mime
-- Route to appropriate loader
+- Detect file type from mime (with extension fallback)
+- Route to appropriate loader:
+  - `application/pdf` → load_pdf
+  - `application/vnd.openxmlformats-officedocument.wordprocessingml.document` → load_docx
+  - `application/vnd.openxmlformats-officedocument.presentationml.presentation` → load_pptx
+  - `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` → load_xlsx
+  - `text/plain`, `text/csv`, `text/markdown` → load_text
+  - `image/png`, `image/jpeg` → ocr.extract_text
 - Skip unsupported types with warning
 
 5.4. **Tests**
 - Unit tests for chunking logic
-- Test with sample PDF, image fixtures
+- Test with sample PDF, docx, pptx, xlsx, image fixtures
 
 ### Checkpoint 5
 - [ ] PDF text extraction works
+- [ ] Office docs (.docx/.pptx/.xlsx) extract text
 - [ ] Image OCR produces text
 - [ ] Chunking produces correct sizes with overlap
 - [ ] Unsupported files logged and skipped
