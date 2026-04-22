@@ -1,6 +1,122 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
-/* Custom base styles */
+@theme {
+  --color-emerald-primary: #34D399;
+  --color-emerald-light: #D1FAE5;
+  --color-emerald-dark: #059669;
+  --color-emerald-deep: #047857;
+  --color-emerald-glow: rgba(52, 211, 153, 0.15);
+  --color-emerald-glass: rgba(52, 211, 153, 0.08);
+
+  --color-surface-light: #FAFDF7;
+  --color-surface-card-light: #FFFFFF;
+  --color-surface-dark: #0F1714;
+  --color-surface-card-dark: #1A2420;
+
+  --color-glass-light: rgba(255, 255, 255, 0.55);
+  --color-glass-dark: rgba(20, 40, 30, 0.6);
+  --color-glass-border-light: rgba(255, 255, 255, 0.35);
+  --color-glass-border-dark: rgba(52, 211, 153, 0.15);
+
+  --font-display: 'Crimson Pro', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+}
+
+/* Light mode (default) */
 body {
-  @apply bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100;
+  font-family: var(--font-body);
+  background-color: var(--color-surface-light);
+  color: #1e293b;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Dark mode */
+.dark body,
+body.dark {
+  background-color: var(--color-surface-dark);
+  color: #e2e8f0;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+/* Glass utility */
+.glass {
+  background: var(--color-glass-light);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  border: 1px solid var(--color-glass-border-light);
+}
+
+.dark .glass {
+  background: var(--color-glass-dark);
+  border-color: var(--color-glass-border-dark);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(52, 211, 153, 0.25);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(52, 211, 153, 0.4);
+}
+
+/* Markdown prose styling */
+.buddy-prose p {
+  margin-bottom: 0.5em;
+}
+
+.buddy-prose p:last-child {
+  margin-bottom: 0;
+}
+
+.buddy-prose ul, .buddy-prose ol {
+  margin-left: 1.25em;
+  margin-bottom: 0.5em;
+}
+
+.buddy-prose li {
+  margin-bottom: 0.15em;
+}
+
+.buddy-prose code {
+  font-size: 0.875em;
+  padding: 0.15em 0.35em;
+  border-radius: 4px;
+  background: rgba(52, 211, 153, 0.1);
+}
+
+.buddy-prose pre {
+  padding: 0.75em 1em;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-bottom: 0.5em;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.dark .buddy-prose pre {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.buddy-prose strong {
+  font-weight: 600;
+}
+
+.buddy-prose h1, .buddy-prose h2, .buddy-prose h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  margin-top: 0.75em;
+  margin-bottom: 0.35em;
 }
