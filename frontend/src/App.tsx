@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { PawPrint } from "lucide-react";
 import { getInitialTheme, applyTheme } from "./api/theme";
 import { useChat } from "./hooks/useChat";
 import { useSync } from "./hooks/useSync";
@@ -6,7 +7,6 @@ import Header from "./components/Header";
 import ChatMessage from "./components/ChatMessage";
 import ChatInput from "./components/ChatInput";
 import LoadingIndicator from "./components/LoadingIndicator";
-import BuddyAnimation from "./components/BuddyAnimation";
 
 export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">(getInitialTheme);
@@ -33,7 +33,6 @@ export default function App() {
         lastSync={lastSync}
       />
 
-      {/* Chat area */}
       <main className="flex-1 overflow-y-auto px-4 pb-2">
         <div className="max-w-3xl mx-auto">
           {isEmpty && !isLoading ? (
@@ -41,7 +40,7 @@ export default function App() {
           ) : (
             <div className="py-6 space-y-5">
               {messages.map((msg, i) => (
-                <ChatMessage key={i} message={msg} index={i} />
+                <ChatMessage key={i} {...msg} />
               ))}
               {isLoading && <LoadingIndicator />}
               {error && (
@@ -55,11 +54,7 @@ export default function App() {
         </div>
       </main>
 
-      <ChatInput
-        onSend={sendMessage}
-        isLoading={isLoading}
-        disabled={limitReached}
-      />
+      <ChatInput onSend={sendMessage} disabled={limitReached || isLoading} />
     </div>
   );
 }
@@ -67,17 +62,19 @@ export default function App() {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-      {/* ============ EXPERIMENTAL: Animated JRT ============ */}
-      <BuddyAnimation />
-      {/* ============ END EXPERIMENTAL ============ */}
+      <div className="w-16 h-16 rounded-full flex items-center justify-center
+                      bg-emerald-50 dark:bg-emerald-950 mb-5">
+        <PawPrint size={28} className="text-emerald-deep dark:text-emerald-accent" />
+      </div>
 
-      <h2 className="font-display text-2xl font-bold text-emerald-dark dark:text-emerald-primary mt-6 mb-2">
+      <h2 className="text-2xl font-semibold tracking-tight mb-2">
         Hey, I'm Buddy!
       </h2>
-      <p className="text-slate-500 dark:text-slate-400 text-sm max-w-sm leading-relaxed">
-        Your personal knowledge assistant. Ask me to fetch answers from your
+      <p className="text-neutral-500 text-sm max-w-sm leading-relaxed">
+        Your personal knowledge assistant. Ask me anything about your
         documents — I'll dig through everything and bring back what you need.
       </p>
+
       <div className="mt-6 flex flex-wrap justify-center gap-2">
         {[
           "What did my notes say about...",
@@ -86,8 +83,11 @@ function EmptyState() {
         ].map((hint) => (
           <span
             key={hint}
-            className="px-3 py-1.5 text-xs rounded-full bg-emerald-primary/10
-                       text-emerald-dark dark:text-emerald-primary border border-emerald-primary/20"
+            className="px-3 py-1.5 text-xs rounded-full
+                       bg-neutral-100 dark:bg-neutral-900
+                       text-neutral-500 dark:text-neutral-400
+                       border border-neutral-200 dark:border-neutral-800
+                       glow-hover hover:border-emerald-border transition-colors cursor-default"
           >
             {hint}
           </span>

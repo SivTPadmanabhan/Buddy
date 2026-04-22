@@ -1,75 +1,67 @@
-import { type KeyboardEvent, useRef, useState } from "react";
 import { Send } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { motion } from "motion/react";
 
 interface ChatInputProps {
-  onSend: (message: string) => void;
-  isLoading: boolean;
+  onSend: (text: string) => void;
   disabled: boolean;
 }
 
-export default function ChatInput({ onSend, isLoading, disabled }: ChatInputProps) {
+export default function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [text, setText] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleSend = () => {
-    if (!text.trim() || isLoading || disabled) return;
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  }, [text]);
+
+  const handleSubmit = () => {
+    if (!text.trim() || disabled) return;
     onSend(text);
     setText("");
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-    }
   };
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
-    }
-  };
-
-  const handleInput = () => {
-    const el = textareaRef.current;
-    if (el) {
-      el.style.height = "auto";
-      el.style.height = Math.min(el.scrollHeight, 150) + "px";
+      handleSubmit();
     }
   };
 
   return (
-    <div className="sticky bottom-0 pb-4 pt-2 px-4">
-      <div className="max-w-3xl mx-auto">
-        <div className="glass rounded-2xl px-4 py-3 flex items-end gap-3 shadow-lg shadow-emerald-primary/5">
+    <div className="border-t border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
+      <div className="max-w-3xl mx-auto px-4 py-3">
+        <div className="flex items-end gap-2 rounded-xl border border-neutral-200 dark:border-neutral-800
+                        bg-neutral-50 dark:bg-neutral-900 px-3 py-2
+                        glow-focus focus-within:border-emerald-border transition-all">
           <textarea
             ref={textareaRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            onInput={handleInput}
-            placeholder={
-              disabled
-                ? "Buddy is resting for today!"
-                : "Ask Buddy to fetch something..."
-            }
-            disabled={disabled || isLoading}
+            placeholder="Ask Buddy anything..."
+            disabled={disabled}
             rows={1}
-            className="flex-1 resize-none bg-transparent outline-none text-sm leading-relaxed
-                       text-slate-800 dark:text-slate-100 placeholder:text-slate-400
-                       dark:placeholder:text-slate-500 disabled:opacity-50"
+            className="flex-1 resize-none bg-transparent text-sm leading-relaxed
+                       placeholder:text-neutral-400 dark:placeholder:text-neutral-600
+                       focus:outline-none disabled:opacity-40"
           />
-
-          <button
-            onClick={handleSend}
-            disabled={!text.trim() || isLoading || disabled}
-            className="flex-shrink-0 w-8 h-8 rounded-xl bg-emerald-primary text-white
-                       flex items-center justify-center transition-all
-                       hover:bg-emerald-dark disabled:opacity-30 disabled:hover:bg-emerald-primary"
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={handleSubmit}
+            disabled={disabled || !text.trim()}
+            className={`flex-shrink-0 p-2 rounded-lg transition-all
+              ${text.trim() && !disabled
+                ? "bg-emerald-deep dark:bg-emerald-accent text-white dark:text-black emerald-pulse"
+                : "text-neutral-300 dark:text-neutral-700"
+              } disabled:opacity-40`}
           >
-            {isLoading ? (
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <Send size={15} />
-            )}
-          </button>
+            <Send size={16} />
+          </motion.button>
         </div>
       </div>
     </div>

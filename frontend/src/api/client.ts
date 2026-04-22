@@ -11,11 +11,6 @@ export interface ChatResponse {
   sources: Source[];
 }
 
-export interface LimitError {
-  error: string;
-  limit_reached: true;
-}
-
 export interface SyncResponse {
   files_processed: number;
   chunks_upserted: number;
@@ -27,11 +22,7 @@ export interface SyncResponse {
 export interface SyncStatus {
   last_sync: string | null;
   files_synced: number;
-  vector_usage: {
-    used: number;
-    limit: number;
-    percent: number;
-  };
+  vector_usage: { used: number; limit: number; percent: number };
 }
 
 export interface UsageEntry {
@@ -68,42 +59,25 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
-
   const body = await res.json();
-
   if (!res.ok) {
-    const isLimit = body?.limit_reached === true;
     throw new BuddyApiError(
       body?.error || body?.detail || `Request failed (${res.status})`,
       res.status,
-      isLimit,
+      body?.limit_reached === true,
     );
   }
-
   return body as T;
 }
 
 export const api = {
-  chat(message: string): Promise<ChatResponse> {
-    return request<ChatResponse>("/chat", {
+  chat: (message: string) =>
+    request<ChatResponse>("/chat", {
       method: "POST",
       body: JSON.stringify({ message }),
-    });
-  },
-
-  triggerSync(): Promise<SyncResponse> {
-    return request<SyncResponse>("/sync", { method: "POST" });
-  },
-
-  getSyncStatus(): Promise<SyncStatus> {
-    return request<SyncStatus>("/sync/status");
-  },
-
-  getHealth(): Promise<HealthResponse> {
-    return request<HealthResponse>("/health");
-  },
-
-  getUsage(): Promise<UsageStatus> {
-    return request<UsageStatus>("/usage");
-  },
+    }),
+  triggerSync: () => request<SyncResponse>("/sync", { method: "POST" }),
+  getSyncStatus: () => request<SyncStatus>("/sync/status"),
+  getHealth: () => request<HealthResponse>("/health"),
+  getUsage: () => request<UsageStatus>("/usage"),
 };
