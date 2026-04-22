@@ -6,9 +6,11 @@ from pydantic import BaseModel
 
 from app.config import settings
 from app.logging_config import get_logger
+from app.services.drive import DriveService
 from app.services.embeddings import Embedder
 from app.services.gemini import GeminiClient
 from app.services.rag import GeminiLimitExceeded, RAGService
+from app.services.sync import SyncService
 from app.services.vectorstore import VectorStore
 
 
@@ -53,6 +55,53 @@ def _build_rag_service() -> RAGService:
 
 def get_rag_service() -> RAGService:
     return _build_rag_service()
+
+
+@lru_cache(maxsize=1)
+def _build_sync_service() -> SyncService:
+    from app.main import usage_tracker
+
+    drive = DriveService(
+        client_id=settings.google_client_id,
+        client_secret=settings.google_client_secret,
+        token_path="data/drive_token.json",
+    )
+    embedder = Embedder()
+    vectorstore = VectorStore(
+        api_key=settings.pinecone_api_key,
+        index_name=settings.pinecone_index_name,
+        usage_tracker=usage_tracker,
+    )
+    return SyncService(
+        drive=drive,
+        embedder=embedder,
+        vectorstore=vectorstore,
+        usage_tracker=usage_tracker,
+        folder_ids=settings.drive_folder_ids,
+    )
+
+
+def get_sync_service() -> SyncService:
+    return _build_sync_service()
+
+
+@router.post("/sync")
+def sync():
+    svc = get_sync_service()
+    result = svc.run_sync()
+    return {
+        "files_processed": result.files_processed,
+        "chunks_upserted": result.chunks_upserted,
+        "files_skipped": result.files_skipped,
+        "limit_reached": result.limit_reached,
+        "errors": result.errors,
+    }
+
+
+@router.get("/sync/status")
+def sync_status():
+    svc = get_sync_service()
+    return svc.get_status()
 
 
 @router.post("/chat")
