@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     gemini_daily_tokens: int = 500000
     pinecone_max_vectors: int = 80000
 
+    supermemory_api_key: str = ""
+    supermemory_container_tag: str = "buddy-default"
+
     usage_file_path: str = "data/usage.json"
 
     @classmethod

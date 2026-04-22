@@ -24,12 +24,14 @@ export function useChat() {
       if (!trimmed || isLoading) return;
 
       setError(null);
-      setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
+      const updated = [...messages, { role: "user" as const, content: trimmed }];
+      setMessages(updated);
       setIsLoading(true);
       scrollToBottom();
 
       try {
-        const res = await api.chat(trimmed);
+        const recent = updated.slice(-10).map((m) => ({ role: m.role, content: m.content }));
+        const res = await api.chat(trimmed, recent);
         setMessages((prev) => [
           ...prev,
           { role: "assistant", content: res.response, sources: res.sources },
@@ -48,7 +50,7 @@ export function useChat() {
         scrollToBottom();
       }
     },
-    [isLoading, scrollToBottom],
+    [isLoading, messages, scrollToBottom],
   );
 
   return { messages, isLoading, error, limitReached, sendMessage, bottomRef };

@@ -71,10 +71,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  chat: (message: string) =>
+  chat: (message: string, history?: { role: string; content: string }[]) =>
     request<ChatResponse>("/chat", {
       method: "POST",
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, history }),
     }),
   triggerSync: () => request<SyncResponse>("/sync", { method: "POST" }),
   getSyncStatus: () => request<SyncStatus>("/sync/status"),

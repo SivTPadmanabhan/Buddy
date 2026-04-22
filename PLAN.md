@@ -391,6 +391,75 @@ pinecone_max_vectors: int = 80000      # Free tier: 100K
 
 ---
 
+## Phase 8.5: Conversation Memory (Supermemory)
+
+**Goal**: Add persistent conversation memory so Buddy remembers prior questions and builds user context across sessions.
+
+### Design
+
+Supermemory provides two capabilities we integrate:
+1. **Memory storage** — after each chat turn, store the Q&A pair so Buddy can recall it later
+2. **Memory retrieval** — before generating a response, fetch relevant past conversations and a user profile to inject into the Gemini prompt
+
+The frontend sends recent conversation history with each request. The backend combines this short-term history with long-term Supermemory context and RAG document context to build a rich prompt.
+
+### Steps
+
+8.5.1. **Install supermemory Python SDK**
+- Add `supermemory` to `requirements.txt`
+- Add `SUPERMEMORY_API_KEY` to `.env.example` and `config.py`
+
+8.5.2. **Create `memory.py` service** (`backend/app/services/memory.py`)
+- Initialize `Supermemory` client with API key
+- `store_conversation(user_msg, assistant_msg, container_tag)` — format and store a conversation turn via `client.add()`
+- `get_memory_context(query, container_tag)` — call `client.profile()` to retrieve:
+  - Static profile (long-term user facts)
+  - Dynamic profile (recent patterns)
+  - Relevant past conversation memories
+- Return a formatted string ready for prompt injection
+- Handle API failures gracefully (memory is enhancement, not critical path)
+
+8.5.3. **Update `rag.py` — inject memory into prompt**
+- Accept optional `history` (list of prior messages) and `memory_context` (from Supermemory)
+- Update `PROMPT_TEMPLATE` to include:
+  - Conversation memory section (from Supermemory)
+  - Recent conversation history (from frontend)
+  - RAG document context (existing)
+- After generating response, call `memory.store_conversation()` asynchronously (fire-and-forget)
+
+8.5.4. **Update `chat.py` endpoint**
+- Extend `ChatRequest` to accept `history: list[dict]` (optional, recent messages from frontend)
+- Before calling `rag.query()`:
+  - Call `memory.get_memory_context(message)` to fetch Supermemory context
+  - Pass both history and memory_context to the RAG service
+- Keep the endpoint synchronous; memory storage is fire-and-forget
+
+8.5.5. **Update `config.py`**
+- Add `supermemory_api_key: str = ""` (optional — memory is an enhancement)
+- Add `supermemory_container_tag: str = "buddy-default"`
+
+8.5.6. **Update frontend `useChat.ts` hook**
+- Send full conversation history with each chat request
+- Trim history to last 10 messages to keep payload reasonable
+
+8.5.7. **Update frontend `api/client.ts`**
+- Update `ChatRequest` type: add `history` field
+- Update `chat()` method to send history in POST body
+
+8.5.8. **Update `.env.example`**
+- Add `SUPERMEMORY_API_KEY` with placeholder and comment
+
+### Checkpoint 8.5
+- [ ] Supermemory SDK installed and configured
+- [ ] `memory.py` can store and retrieve conversation memories
+- [ ] RAG prompt includes memory context alongside document context
+- [ ] Follow-up questions work ("what else?", "tell me more about that")
+- [ ] Chat works normally if Supermemory API key is not set (graceful degradation)
+- [ ] Frontend sends conversation history with each request
+- [ ] Memory failures don't break the chat flow
+
+---
+
 ## Phase 9: Frontend Foundation
 
 **Goal**: React app with API client, full layout, sleek design with emerald glow.
@@ -637,6 +706,7 @@ pinecone_max_vectors: int = 80000      # Free tier: 100K
 | 6 | Embeddings & vector store + limits | tdd |
 | 7 | RAG pipeline & chat + limits | tdd |
 | 8 | Sync service | tdd |
+| 8.5 | Conversation memory (Supermemory) | tdd |
 | 9 | Frontend foundation | frontend |
 | 10 | Frontend components | frontend |
 | 11 | Integration & polish | - |

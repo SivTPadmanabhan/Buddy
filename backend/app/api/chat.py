@@ -9,6 +9,7 @@ from app.logging_config import get_logger
 from app.services.drive import DriveService
 from app.services.embeddings import Embedder
 from app.services.gemini import GeminiClient
+from app.services.memory import MemoryService
 from app.services.rag import GeminiLimitExceeded, RAGService
 from app.services.sync import SyncService
 from app.services.vectorstore import VectorStore
@@ -19,8 +20,14 @@ log = get_logger(__name__)
 router = APIRouter()
 
 
+class HistoryMessage(BaseModel):
+    role: str
+    content: str
+
+
 class ChatRequest(BaseModel):
     message: str
+    history: list[HistoryMessage] | None = None
 
 
 class SourceItem(BaseModel):
@@ -35,6 +42,14 @@ class ChatResponse(BaseModel):
 
 
 @lru_cache(maxsize=1)
+def _build_memory_service() -> MemoryService:
+    return MemoryService(
+        api_key=settings.supermemory_api_key,
+        container_tag=settings.supermemory_container_tag,
+    )
+
+
+@lru_cache(maxsize=1)
 def _build_rag_service() -> RAGService:
     from app.main import usage_tracker
 
@@ -45,11 +60,13 @@ def _build_rag_service() -> RAGService:
         usage_tracker=usage_tracker,
     )
     gemini = GeminiClient(api_key=settings.gemini_api_key)
+    memory = _build_memory_service()
     return RAGService(
         embedder=embedder,
         vectorstore=vectorstore,
         gemini=gemini,
         usage_tracker=usage_tracker,
+        memory=memory,
     )
 
 
@@ -107,8 +124,9 @@ def sync_status():
 @router.post("/chat")
 def chat(req: ChatRequest):
     svc = get_rag_service()
+    history = [{"role": m.role, "content": m.content} for m in req.history] if req.history else None
     try:
-        result = svc.query(req.message)
+        result = svc.query(req.message, history=history)
     except GeminiLimitExceeded as e:
         return JSONResponse(
             status_code=429,
