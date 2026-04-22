@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -22,9 +23,32 @@ usage_tracker = UsageTracker(
 )
 
 
+def _auto_sync() -> None:
+    try:
+        from app.api.chat import get_sync_service
+        svc = get_sync_service()
+        result = svc.run_sync()
+        log.info(
+            "auto_sync_complete",
+            category="sync",
+            action="auto_sync",
+            files_processed=result.files_processed,
+            chunks_upserted=result.chunks_upserted,
+        )
+    except Exception as e:
+        log.warning(
+            "auto_sync_failed",
+            category="sync",
+            action="auto_sync",
+            error=str(e),
+        )
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     log.info("startup", category="system", action="startup")
+    if settings.sync_on_startup:
+        asyncio.get_event_loop().run_in_executor(None, _auto_sync)
     yield
     log.info("shutdown", category="system", action="shutdown")
 
