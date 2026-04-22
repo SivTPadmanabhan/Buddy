@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api import chat as chat_api
 from app.config import settings
 from app.logging_config import configure_logging, get_logger
 from app.services.usage import UsageTracker
@@ -42,6 +43,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(chat_api.router)
 
 
 def _check_pinecone() -> dict:
