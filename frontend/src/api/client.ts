@@ -4,6 +4,7 @@ export interface Source {
   source_file: string | null;
   chunk_index: number | null;
   score: number | null;
+  text_preview: string | null;
 }
 
 export interface ChatResponse {
@@ -55,10 +56,18 @@ export class BuddyApiError extends Error {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, {
+      headers: { "Content-Type": "application/json" },
+      ...options,
+    });
+  } catch {
+    throw new BuddyApiError(
+      "Can't reach Buddy's backend. Is the server running?",
+      0,
+    );
+  }
   const body = await res.json();
   if (!res.ok) {
     throw new BuddyApiError(

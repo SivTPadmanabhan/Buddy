@@ -59,18 +59,18 @@ def test_query_returns_response_and_sources(embedder, vectorstore, gemini, track
     assert len(result["sources"]) == 2
     assert result["sources"][0]["source_file"] == "file1.pdf"
     assert result["sources"][0]["score"] == 0.92
+    assert result["sources"][0]["text_preview"] == "Paris is the capital of France."
 
     embedder.embed_text.assert_called_once_with("What is the capital of France?")
     vectorstore.search.assert_called_once()
 
 
-def test_query_uses_seven_step_prompt_template(embedder, vectorstore, gemini, tracker):
+def test_query_builds_prompt_with_context_and_query(embedder, vectorstore, gemini, tracker):
     svc = RAGService(embedder=embedder, vectorstore=vectorstore, gemini=gemini, usage_tracker=tracker)
     svc.query("What is the capital of France?")
 
     prompt = gemini.generate.call_args.args[0]
-    assert "Step 1: Parse Context Information" in prompt
-    assert "Step 7: Provide Response" in prompt
+    assert "You are Buddy" in prompt
     assert "What is the capital of France?" in prompt
     assert "Paris is the capital of France." in prompt
     assert "<context>" in prompt and "</context>" in prompt

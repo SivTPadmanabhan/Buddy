@@ -133,6 +133,7 @@ class RAGService:
                 "source_file": h.metadata.get("source_file"),
                 "chunk_index": h.metadata.get("chunk_index"),
                 "score": h.score,
+                "text_preview": (h.metadata.get("text", "") or "")[:300],
             }
             for h in hits
         ]

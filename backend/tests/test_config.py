@@ -6,7 +6,7 @@ import pytest
 def _fresh_settings():
     import app.config as config
     importlib.reload(config)
-    return config.Settings()
+    return config.Settings(_env_file=None)
 
 
 def test_settings_loads_required_env(env):
