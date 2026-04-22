@@ -1,13 +1,15 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-emerald-accent: #34D399;
-  --color-emerald-deep: #047857;
-  --color-emerald-glow: rgba(16, 185, 129, 0.3);
-  --color-emerald-glow-soft: rgba(16, 185, 129, 0.1);
-  --color-emerald-border: rgba(16, 185, 129, 0.5);
-  --color-emerald-ring: rgba(16, 185, 129, 0.4);
-  --color-emerald-subtle: rgba(16, 185, 129, 0.08);
+  --color-emerald-deep: #145a32;
+  --color-emerald-glow: rgba(20, 90, 50, 0.3);
+  --color-emerald-glow-soft: rgba(20, 90, 50, 0.1);
+  --color-emerald-border: rgba(20, 90, 50, 0.5);
+  --color-emerald-ring: rgba(20, 90, 50, 0.4);
+  --color-emerald-subtle: rgba(20, 90, 50, 0.08);
 
   --font-sans: 'Geist Sans', 'Geist', system-ui, -apple-system, sans-serif;
 }
@@ -16,7 +18,7 @@
 body {
   font-family: var(--font-sans);
   background-color: #ffffff;
-  color: #171717;
+  color: #000000;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
@@ -36,8 +38,8 @@ html.dark {
 }
 
 .glow-hover:hover {
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.3), 0 0 30px rgba(16, 185, 129, 0.1);
-  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 0 15px rgba(20, 90, 50, 0.25), 0 0 30px rgba(20, 90, 50, 0.08);
+  border-color: rgba(20, 90, 50, 0.45);
 }
 
 .dark .glow-hover:hover {
@@ -47,8 +49,8 @@ html.dark {
 
 .glow-focus:focus,
 .glow-focus:focus-within {
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.4), 0 0 15px rgba(16, 185, 129, 0.2);
-  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 0 0 2px rgba(20, 90, 50, 0.35), 0 0 15px rgba(20, 90, 50, 0.15);
+  border-color: rgba(20, 90, 50, 0.45);
   outline: none;
 }
 
@@ -60,17 +62,13 @@ html.dark {
 
 /* Send button pulse */
 @keyframes emerald-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
-  70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(20, 90, 50, 0.5); }
+  70% { box-shadow: 0 0 0 10px rgba(20, 90, 50, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(20, 90, 50, 0); }
 }
 
 .pulse-on-click:active {
   animation: emerald-pulse 0.4s ease-out;
-}
-
-.emerald-pulse {
-  animation: emerald-pulse 1.5s ease-out infinite;
 }
 
 /* Scrollbar */

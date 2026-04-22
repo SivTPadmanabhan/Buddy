@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, type Source, BuddyApiError } from "../api/client";
 
 export interface Message {
@@ -13,10 +13,17 @@ export function useChat() {
   const [error, setError] = useState<string | null>(null);
   const [limitReached, setLimitReached] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const messagesRef = useRef(messages);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   }, []);
+
+  const clearError = useCallback(() => setError(null), []);
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -24,7 +31,7 @@ export function useChat() {
       if (!trimmed || isLoading) return;
 
       setError(null);
-      const updated = [...messages, { role: "user" as const, content: trimmed }];
+      const updated = [...messagesRef.current, { role: "user" as const, content: trimmed }];
       setMessages(updated);
       setIsLoading(true);
       scrollToBottom();
@@ -50,8 +57,15 @@ export function useChat() {
         scrollToBottom();
       }
     },
-    [isLoading, messages, scrollToBottom],
+    [isLoading, scrollToBottom],
   );
 
-  return { messages, isLoading, error, limitReached, sendMessage, bottomRef };
+  const retry = useCallback(() => {
+    const lastUserMsg = [...messagesRef.current].reverse().find((m) => m.role === "user");
+    if (!lastUserMsg) return;
+    setMessages((prev) => prev.slice(0, -1));
+    sendMessage(lastUserMsg.content);
+  }, [sendMessage]);
+
+  return { messages, isLoading, error, limitReached, sendMessage, clearError, retry, bottomRef };
 }

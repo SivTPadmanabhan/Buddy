@@ -10,6 +10,7 @@ from app.services.drive import DriveService
 from app.services.embeddings import Embedder
 from app.services.gemini import GeminiClient
 from app.services.memory import MemoryService
+from app.services.gemini import GeminiError
 from app.services.rag import GeminiLimitExceeded, RAGService
 from app.services.sync import SyncService
 from app.services.vectorstore import VectorStore
@@ -34,6 +35,7 @@ class SourceItem(BaseModel):
     source_file: str | None = None
     chunk_index: int | None = None
     score: float | None = None
+    text_preview: str | None = None
 
 
 class ChatResponse(BaseModel):
@@ -131,6 +133,11 @@ def chat(req: ChatRequest):
         return JSONResponse(
             status_code=429,
             content={"error": str(e), "limit_reached": True},
+        )
+    except GeminiError:
+        return JSONResponse(
+            status_code=502,
+            content={"error": "Buddy couldn't reach the AI service. Please try again in a minute."},
         )
     return result
 

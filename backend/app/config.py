@@ -5,12 +5,20 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
+_CSV_FIELDS = {"drive_folder_ids"}
+
+
+def _csv_prepare(original_prepare):
+    def prepare(self, field_name, field, value, value_is_complex):
+        if field_name in _CSV_FIELDS and isinstance(value, str):
+            return [s.strip() for s in value.split(",") if s.strip()]
+        return original_prepare(field_name, field, value, value_is_complex)
+    return prepare
+
 
 class _CsvEnvSource(EnvSettingsSource):
-    _CSV_FIELDS = {"drive_folder_ids"}
-
     def prepare_field_value(self, field_name, field, value, value_is_complex):
-        if field_name in self._CSV_FIELDS and isinstance(value, str):
+        if field_name in _CSV_FIELDS and isinstance(value, str):
             return [s.strip() for s in value.split(",") if s.strip()]
         return super().prepare_field_value(field_name, field, value, value_is_complex)
 
@@ -44,6 +52,12 @@ class Settings(BaseSettings):
         dotenv_settings,
         file_secret_settings,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
+        original = dotenv_settings.prepare_field_value
+        dotenv_settings.prepare_field_value = lambda fn, f, v, c: (
+            [s.strip() for s in v.split(",") if s.strip()]
+            if fn in _CSV_FIELDS and isinstance(v, str)
+            else original(fn, f, v, c)
+        )
         return (
             init_settings,
             _CsvEnvSource(settings_cls),

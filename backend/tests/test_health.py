@@ -1,4 +1,8 @@
+import pytest
+
 from fastapi.testclient import TestClient
+
+pytest.importorskip("sentence_transformers", reason="requires Docker environment")
 
 
 def test_health_returns_ok(env, usage_file):

@@ -16,10 +16,10 @@ class Embedder:
 
     def embed_text(self, text: str) -> list[float]:
         vec = self._get_model().encode(text, show_progress_bar=False)
-        return vec.tolist()
+        return vec if isinstance(vec, list) else vec.tolist()
 
     def embed_batch(self, texts: list[str]) -> list[list[float]]:
         if not texts:
             return []
         vecs = self._get_model().encode(texts, show_progress_bar=False)
-        return vecs.tolist()
+        return vecs if isinstance(vecs, list) else vecs.tolist()
