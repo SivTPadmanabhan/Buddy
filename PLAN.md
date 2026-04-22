@@ -393,89 +393,96 @@ pinecone_max_vectors: int = 80000      # Free tier: 100K
 
 ## Phase 9: Frontend Foundation
 
-**Goal**: React app with API client, full layout, and distinctive design system.
+**Goal**: React app with API client, full layout, sleek design with emerald glow.
 
-**Note**: Invoke `frontend` skill for this phase.
+**Note**: Invoke `frontend` skill for this phase. Complete rewrite of all frontend src/.
 
 ### Design System
 
-**Theme: "Academic Fetch"** — clean, scholarly, friendly, dog-themed.
+**Theme: "Sleek Fetch"** — minimal, high-contrast, reactive glow.
 
-**Color palette (emerald bold):**
-- Primary: `#34D399` (emerald)
-- Primary light: `#D1FAE5` (pale emerald)
-- Primary dark: `#059669` (deep emerald)
-- Light mode bg: off-white / cream
-- Dark mode bg: deep slate/charcoal
-- Text: slate-800 (light) / slate-100 (dark)
+**Color palette:**
+- Dark mode: pure black `#000000` bg, `#34D399` emerald accent, white text
+- Light mode: pure white `#FFFFFF` bg, `#047857` deep emerald accent, near-black text
+- Borders: `#1a1a1a` (dark) / `#e5e5e5` (light)
+- Muted text: `#737373` (dark) / `#525252` (light)
 
-**Glass accents (not full liquid glass):**
-- Header: frosted glass strip (`bg-white/40 backdrop-blur-xl`)
-- Input bar: glass with blur
-- Source cards: subtle glass
-- Chat bubbles: solid, clean
+**NO glass/frosted/blur effects.** Clean solid surfaces only.
+
+**Reactive emerald glow effects:**
+- Buttons/cards on hover: `box-shadow: 0 0 15px rgba(16,185,129,0.3), 0 0 30px rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.5)`
+- Send button: emerald pulse ripple on click
+- Input focus: emerald ring glow
+- Source cards: subtle emerald border glow on hover
+
+**Typography:**
+- Font: Geist Sans (Vercel) — load via `@fontsource/geist-sans` or CDN
+- Single font family, weight 400/500/600/700
 
 **Layout: centered conversation column**
 - Narrow centered column (~max-w-3xl)
-- Header at top with logo, sync button, theme toggle, usage popover
+- Minimal header: "Buddy" name + paw icon, sync button, theme toggle, usage popover
 - Chat messages in scrollable area
-- Floating glass input bar at bottom
+- Clean input bar at bottom (no glass, solid with glow on focus)
 
-**Dog / "Fetch" personality:**
-- Fetch-themed copy: "Fetching your answer...", "Buddy found N sources", "Ask me to fetch something!"
-- Small Buddy avatar (dog icon) next to assistant messages
-- User will provide custom dog logo image later
-- **[EXPERIMENTAL]** Animated line-art Jack Russell Terrier (head+neck, barking and smiling) on landing/empty state — CSS/SVG animation, must be easily removable (wrap in demarcating comments)
+**Dog personality (minimal):**
+- Paw-print icon as logo placeholder (user will add custom dog image later)
+- No animated dog, no dog in empty state
+- Fetch-themed copy: "Fetching your answer...", "Buddy found N sources"
+- Paw-print avatar next to assistant messages
 
-**Typography:**
-- Display font: distinctive, characterful (not Inter/Arial/Roboto)
-- Body font: clean readable serif or sans-serif pair
-- Import via Google Fonts in index.html
+**Animations (spring physics, inspired by Roomie/DealyDigests):**
+- Message entrance: fade + slide up (spring stiffness 260, damping 20)
+- Source accordion: smooth height expand
+- Loading: pulsing dots
+- Buttons: scale on hover/tap (spring stiffness 400, damping 10)
 
 **New frontend dependencies:**
-- `motion` — React animations (message entrance, loading states, page transitions)
-- `lucide-react` — icon library (send, sync, sun/moon, paw-print, chevron)
-- `react-markdown` + `remark-gfm` — render markdown in Gemini responses
+- `motion` — React spring animations
+- `lucide-react` — icon library
+- `react-markdown` + `remark-gfm` — render Gemini markdown responses
 
 ### Steps
 
-9.1. **Install new dependencies**
+9.1. **Install dependencies & Geist font**
 - `npm install motion lucide-react react-markdown remark-gfm`
-- No backend changes needed
+- Load Geist Sans via CDN in index.html
 
-9.2. **Design tokens & theme (index.css + tailwind)**
-- CSS variables for emerald palette, glass effects, fonts
-- Dark/light mode via class toggle (respect system preference, manual override)
-- Glass utility classes
+9.2. **Design tokens & theme (index.css)**
+- CSS variables for both modes (black/white bg, emerald accents)
+- Dark/light mode via class toggle on `<html>` (respect system pref, manual override)
+- Glow utility classes (`.glow-hover`, `.glow-focus`)
+- No glass utilities
 
-9.3. **API client (lib/client.ts)**
+9.3. **API client (api/client.ts)**
 - Fetch wrapper with base URL (`http://localhost:8000`)
 - Methods: `chat(message)`, `triggerSync()`, `getSyncStatus()`, `getHealth()`, `getUsage()`
 - Error handling: detect `limit_reached` in 429 responses, network errors
 - TypeScript interfaces for all response shapes
 
-9.4. **App layout (App.tsx)**
-- Header: logo/name, sync button, theme toggle, usage indicator
-- Main: centered chat column
-- Footer: floating glass input bar
-- Responsive (mobile-friendly)
+9.4. **Theme manager (api/theme.ts)**
+- `getInitialTheme()` — check localStorage then system preference
+- `applyTheme(theme)` — toggle `dark` class on `<html>`
 
-9.5. **[EXPERIMENTAL] Animated JRT landing illustration**
-- SVG line-art Jack Russell Terrier head+neck
-- CSS keyframe animation: barking and smiling on page load
-- Shows in empty state (no messages yet)
-- Wrapped in clearly demarcated comments for easy removal
-- Design as standalone component (`BuddyAnimation.tsx`)
+9.5. **Hooks (hooks/useChat.ts, hooks/useSync.ts)**
+- useChat: message state, sendMessage, loading, error, limitReached, auto-scroll
+- useSync: triggerSync, isSyncing, lastSync, filesCount
+
+9.6. **Components (complete rewrite)**
+- `Header.tsx` — minimal bar with name/paw, sync, theme toggle, usage popover
+- `ChatMessage.tsx` — assistant (paw avatar, markdown, expandable sources with glow), user (right-aligned emerald)
+- `ChatInput.tsx` — solid input with emerald glow on focus, send button with pulse
+- `LoadingIndicator.tsx` — pulsing "Fetching..." with dots
+- `App.tsx` — layout, empty state (just text + prompt hints, no dog illustration)
 
 ### Checkpoint 9
 - [ ] Frontend connects to backend API
-- [ ] Basic layout renders with emerald theme
+- [ ] Sleek black/white theme with emerald accents
 - [ ] Dark/light mode toggle works
+- [ ] Emerald glow on hover/focus interactions
 - [ ] API client methods work
-- [ ] Glass accents on header and input bar
-- [ ] Fetch-themed placeholder copy in empty state
+- [ ] Fetch-themed copy in empty state
 - [ ] Limit errors handled gracefully
-- [ ] [EXPERIMENTAL] Animated JRT displays on landing
 
 ---
 
