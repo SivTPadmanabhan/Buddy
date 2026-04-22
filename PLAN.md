@@ -383,97 +383,156 @@ pinecone_max_vectors: int = 80000      # Free tier: 100K
 - Test limit enforcement
 
 ### Checkpoint 8
-- [ ] Manual sync processes all files
-- [ ] Incremental sync skips unchanged files
-- [ ] Sync stops gracefully at vector limit
-- [ ] Sync status endpoint works
-- [ ] Auto-sync triggers on startup
+- [x] Manual sync processes all files
+- [x] Incremental sync skips unchanged files
+- [x] Sync stops gracefully at vector limit
+- [x] Sync status endpoint works
+- [x] Auto-sync triggers on startup
 
 ---
 
 ## Phase 9: Frontend Foundation
 
-**Goal**: React app with API client and basic layout.
+**Goal**: React app with API client, full layout, and distinctive design system.
 
 **Note**: Invoke `frontend` skill for this phase.
 
+### Design System
+
+**Theme: "Academic Fetch"** — clean, scholarly, friendly, dog-themed.
+
+**Color palette (emerald bold):**
+- Primary: `#34D399` (emerald)
+- Primary light: `#D1FAE5` (pale emerald)
+- Primary dark: `#059669` (deep emerald)
+- Light mode bg: off-white / cream
+- Dark mode bg: deep slate/charcoal
+- Text: slate-800 (light) / slate-100 (dark)
+
+**Glass accents (not full liquid glass):**
+- Header: frosted glass strip (`bg-white/40 backdrop-blur-xl`)
+- Input bar: glass with blur
+- Source cards: subtle glass
+- Chat bubbles: solid, clean
+
+**Layout: centered conversation column**
+- Narrow centered column (~max-w-3xl)
+- Header at top with logo, sync button, theme toggle, usage popover
+- Chat messages in scrollable area
+- Floating glass input bar at bottom
+
+**Dog / "Fetch" personality:**
+- Fetch-themed copy: "Fetching your answer...", "Buddy found N sources", "Ask me to fetch something!"
+- Small Buddy avatar (dog icon) next to assistant messages
+- User will provide custom dog logo image later
+- **[EXPERIMENTAL]** Animated line-art Jack Russell Terrier (head+neck, barking and smiling) on landing/empty state — CSS/SVG animation, must be easily removable (wrap in demarcating comments)
+
+**Typography:**
+- Display font: distinctive, characterful (not Inter/Arial/Roboto)
+- Body font: clean readable serif or sans-serif pair
+- Import via Google Fonts in index.html
+
+**New frontend dependencies:**
+- `motion` — React animations (message entrance, loading states, page transitions)
+- `lucide-react` — icon library (send, sync, sun/moon, paw-print, chevron)
+- `react-markdown` + `remark-gfm` — render markdown in Gemini responses
+
 ### Steps
 
-9.1. **API client (client.ts)**
-- Fetch wrapper with base URL
-- Methods: chat(), sync(), getSyncStatus(), getHealth(), getUsage()
-- Error handling (including limit_reached responses)
+9.1. **Install new dependencies**
+- `npm install motion lucide-react react-markdown remark-gfm`
+- No backend changes needed
 
-9.2. **App layout**
-- Header with status and sync button
-- Main chat area
-- Input bar at bottom
-- Usage indicator (optional, in header)
+9.2. **Design tokens & theme (index.css + tailwind)**
+- CSS variables for emerald palette, glass effects, fonts
+- Dark/light mode via class toggle (respect system preference, manual override)
+- Glass utility classes
 
-9.3. **Basic styling with Tailwind**
-- Dark/light theme support (optional)
-- Responsive layout
-- Polished, not basic
+9.3. **API client (lib/client.ts)**
+- Fetch wrapper with base URL (`http://localhost:8000`)
+- Methods: `chat(message)`, `triggerSync()`, `getSyncStatus()`, `getHealth()`, `getUsage()`
+- Error handling: detect `limit_reached` in 429 responses, network errors
+- TypeScript interfaces for all response shapes
+
+9.4. **App layout (App.tsx)**
+- Header: logo/name, sync button, theme toggle, usage indicator
+- Main: centered chat column
+- Footer: floating glass input bar
+- Responsive (mobile-friendly)
+
+9.5. **[EXPERIMENTAL] Animated JRT landing illustration**
+- SVG line-art Jack Russell Terrier head+neck
+- CSS keyframe animation: barking and smiling on page load
+- Shows in empty state (no messages yet)
+- Wrapped in clearly demarcated comments for easy removal
+- Design as standalone component (`BuddyAnimation.tsx`)
 
 ### Checkpoint 9
 - [ ] Frontend connects to backend API
-- [ ] Basic layout renders
+- [ ] Basic layout renders with emerald theme
+- [ ] Dark/light mode toggle works
 - [ ] API client methods work
+- [ ] Glass accents on header and input bar
+- [ ] Fetch-themed placeholder copy in empty state
 - [ ] Limit errors handled gracefully
+- [ ] [EXPERIMENTAL] Animated JRT displays on landing
 
 ---
 
 ## Phase 10: Frontend Components
 
-**Goal**: Complete chat interface.
+**Goal**: Complete chat interface with full dog/fetch personality.
 
 **Note**: Invoke `frontend` skill for this phase.
 
 ### Steps
 
-10.1. **StatusBadge component**
-- Shows connection status (connected/disconnected)
-- Shows last sync time
+10.1. **useChat hook (hooks/useChat.ts)**
+- Manage message history `{role, content, sources?}[]`
+- `sendMessage(text)` → calls `client.chat()`, appends user + assistant messages
+- Loading state (triggers "Fetching..." animation)
+- Error state: detect `limit_reached`, network errors
+- Auto-scroll to bottom on new message
 
-10.2. **SyncButton component**
-- Trigger sync on click
-- Show spinner while syncing
-- Disable when sync in progress
-- Show warning if vector limit near
+10.2. **useSync hook (hooks/useSync.ts)**
+- `triggerSync()` → calls `client.triggerSync()`
+- Poll `client.getSyncStatus()` while syncing
+- Expose: `isSyncing`, `lastSync`, `filesCount`, `syncResult`
 
-10.3. **ChatWindow component**
-- Display message history
-- User messages vs assistant messages
-- Show sources on assistant messages
-- Handle limit_reached error state
+10.3. **ChatMessage component**
+- Assistant messages: Buddy dog avatar, emerald-tinted bubble, expandable source cards (glass effect)
+- User messages: right-aligned, primary-colored bubble
+- Message entrance animations via `motion`
+- Source cards: file name, relevance score, expandable text preview
+- Fetch-themed copy: "Buddy found N sources" as subtitle
 
 10.4. **ChatInput component**
-- Text input with send button
-- Enter to send
-- Disable while waiting for response
-- Disable if daily limit reached
+- Glass-effect floating bar at bottom
+- Text input with send button (lucide Send icon)
+- Enter to send, Shift+Enter for newline
+- Disable + shimmer while waiting for response
+- Show friendly message if daily limit reached ("Buddy is resting for today!")
 
-10.5. **UsageIndicator component** (optional)
-- Small indicator showing daily usage
-- Tooltip with detailed stats
-- Warn when approaching limits
+10.5. **Header component**
+- Buddy logo/name (left)
+- SyncButton: paw-print icon, spinner while syncing, "Sync" label
+- ThemeToggle: sun/moon icon, toggles dark/light
+- UsagePopover: click to show usage bars (gemini requests, tokens, vectors)
 
-10.6. **useChat hook**
-- Manage chat state
-- Handle sending messages
-- Loading state
-- Error state for limits
-
-10.7. **useSync hook**
-- Manage sync state
-- Poll status while syncing
+10.6. **UsagePopover component**
+- Emerald progress bars for each service
+- Percentage labels
+- Warning state (amber) at 80%+
+- Danger state (red) at 95%+
 
 ### Checkpoint 10
-- [ ] Can send message and see response
-- [ ] Sources displayed with responses
-- [ ] Sync button works
-- [ ] Status updates correctly
-- [ ] Limit reached shown to user gracefully
+- [ ] Can send message and see Buddy's response with avatar
+- [ ] Sources displayed as expandable cards with glass effect
+- [ ] Message entrance animations smooth
+- [ ] Sync button works with loading state
+- [ ] Theme toggle switches light/dark
+- [ ] Usage popover shows stats with progress bars
+- [ ] Limit reached shown to user gracefully ("Buddy is resting!")
 
 ---
 
