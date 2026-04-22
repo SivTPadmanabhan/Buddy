@@ -23,13 +23,13 @@ Buddy is a personal RAG (Retrieval-Augmented Generation) system that indexes doc
   │   Port 3000             │    │   Port 8000             │
   └─────────────────────────┘    └───────────┬─────────────┘
                                               │
-                   ┌──────────────────────────┼──────────────────┐
-                   │                          │                  │
-                   v                          v                  v
-           ┌──────────────┐          ┌──────────────┐    ┌─────────────┐
-           │ Google Drive │          │   Pinecone   │    │   Gemini    │
-           │     API      │          │  Vector DB   │    │     API     │
-           └──────────────┘          └──────────────┘    └─────────────┘
+                   ┌──────────────┬───────────┼──────────────────┐
+                   │              │           │                  │
+                   v              v           v                  v
+           ┌──────────────┐ ┌──────────┐ ┌──────────────┐ ┌─────────────┐
+           │ Google Drive │ │  Super   │ │   Pinecone   │ │   Gemini    │
+           │     API      │ │  memory  │ │  Vector DB   │ │     API     │
+           └──────────────┘ └──────────┘ └──────────────┘ └─────────────┘
 ```
 
 ### Technology Stack
@@ -40,6 +40,7 @@ Buddy is a personal RAG (Retrieval-Augmented Generation) system that indexes doc
 | Frontend | React + Vite + Tailwind | Polished UI, not basic styling |
 | Vector DB | Pinecone | Free tier: 1 index, 100K vectors |
 | LLM | Google Gemini | Free tier: 15 RPM, 1M tokens/day |
+| Memory | Supermemory | Conversation memory & user profiles |
 | Embeddings | Sentence Transformers | Local, all-MiniLM-L6-v2 |
 | OCR | Tesseract | Local, for scanned images |
 | Office docs | python-docx, python-pptx, openpyxl | Parse native MS Office formats |
@@ -65,6 +66,7 @@ buddy/
 │   │       ├── ocr.py           # Tesseract wrapper
 │   │       ├── embeddings.py    # Sentence Transformers wrapper
 │   │       ├── vectorstore.py   # Pinecone operations
+│   │       ├── memory.py        # Supermemory conversation memory
 │   │       └── rag.py           # RAG orchestration
 │   ├── tests/
 │   │   ├── conftest.py
@@ -113,7 +115,13 @@ buddy/
 **POST /chat**
 ```json
 // Request
-{ "message": "What did my professor say about recursion?" }
+{
+  "message": "What did my professor say about recursion?",
+  "history": [
+    { "role": "user", "content": "Tell me about data structures" },
+    { "role": "assistant", "content": "Based on your notes..." }
+  ]
+}
 
 // Response
 {
@@ -185,7 +193,12 @@ User: "What did my professor say about recursion?"
          │
          v
 ┌─────────────────┐
-│    rag.py       │  Build prompt with context
+│  memory.py      │  Fetch user profile + relevant memories from Supermemory
+└────────┬────────┘
+         │
+         v
+┌─────────────────┐
+│    rag.py       │  Build prompt with RAG context + conversation memory
 └────────┬────────┘
          │
          v
@@ -195,6 +208,60 @@ User: "What did my professor say about recursion?"
          │
          v
 "Based on your CS201 notes..."
+         │
+         v
+┌─────────────────┐
+│  memory.py      │  Store conversation turn in Supermemory (async)
+└─────────────────┘
+```
+
+## Conversation Memory (Supermemory)
+
+### Overview
+
+Buddy uses [Supermemory](https://supermemory.ai) for persistent conversation memory. This gives Buddy awareness of prior questions and answers across sessions, enabling follow-up questions ("what else did the professor say?") and building a profile of the user's interests and study patterns.
+
+### How it Works
+
+1. **On each chat request**, before calling Gemini, the backend queries Supermemory for:
+   - **User profile** (static facts + dynamic patterns learned over time)
+   - **Relevant past memories** (semantically similar prior conversations)
+2. This memory context is injected into the Gemini prompt alongside RAG document context.
+3. **After generating a response**, the full conversation turn (user question + assistant answer) is stored in Supermemory asynchronously.
+
+### Scoping
+
+- Memories are scoped by `container_tag` — set to a user identifier (default: `"buddy-default"`)
+- All conversations share the same memory pool, so Buddy learns across sessions
+
+### API Integration
+
+```python
+from supermemory import Supermemory
+
+client = Supermemory()  # Uses SUPERMEMORY_API_KEY env var
+
+# Store conversation
+client.add(
+    content="user: What is a linked list?\nassistant: A linked list is...",
+    container_tag="buddy-default",
+)
+
+# Retrieve memory context before generating response
+profile = client.profile(
+    container_tag="buddy-default",
+    q="Tell me more about linked lists",
+)
+# profile.profile.static  → long-term user facts
+# profile.profile.dynamic → recent patterns
+# profile.search_results  → relevant past conversations
+```
+
+### Configuration
+
+```bash
+# .env
+SUPERMEMORY_API_KEY=your-supermemory-api-key
 ```
 
 ## Configuration & API Keys

@@ -85,7 +85,12 @@ class VectorStore:
         return hits
 
     def delete_by_source(self, source_file: str) -> None:
-        self._index.delete(filter={"source_file": {"$eq": source_file}})
+        try:
+            self._index.delete(filter={"source_file": {"$eq": source_file}})
+        except Exception as e:
+            if "Namespace not found" in str(e):
+                return
+            raise
 
     def get_vector_count(self) -> int:
         stats = self._index.describe_index_stats()
