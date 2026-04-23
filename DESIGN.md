@@ -39,7 +39,7 @@ Buddy is a personal RAG (Retrieval-Augmented Generation) system that indexes doc
 | Backend | FastAPI (Python) | REST API, async support |
 | Frontend | React + Vite + Tailwind | Polished UI, not basic styling |
 | Vector DB | Pinecone | Free tier: 1 index, 100K vectors |
-| LLM | Google Gemini | Free tier: 15 RPM, 1M tokens/day |
+| LLM | Google Gemini 3.1 Flash Lite | Free tier, lightweight model |
 | Memory | Supermemory | Conversation memory & user profiles |
 | Embeddings | Sentence Transformers | Local, all-MiniLM-L6-v2 |
 | OCR | Tesseract | Local, for scanned images |

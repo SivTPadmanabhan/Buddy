@@ -22,14 +22,14 @@ def test_generate_returns_text_and_token_counts(fake_response):
         model.generate_content.return_value = fake_response
         genai.GenerativeModel.return_value = model
 
-        client = GeminiClient(api_key="k", model_name="gemini-2.5-flash")
+        client = GeminiClient(api_key="k", model_name="gemini-3.1-flash-lite")
         text, input_tokens, output_tokens = client.generate("prompt")
 
     assert text == "hello world"
     assert input_tokens == 12
     assert output_tokens == 5
     genai.configure.assert_called_once_with(api_key="k")
-    genai.GenerativeModel.assert_called_once_with("gemini-2.5-flash")
+    genai.GenerativeModel.assert_called_once_with("gemini-3.1-flash-lite")
     model.generate_content.assert_called_once_with("prompt")
 
 
@@ -44,7 +44,7 @@ def test_generate_retries_on_transient_error(fake_response):
         ]
         genai.GenerativeModel.return_value = model
 
-        client = GeminiClient(api_key="k", model_name="gemini-2.5-flash")
+        client = GeminiClient(api_key="k", model_name="gemini-3.1-flash-lite")
         text, _, _ = client.generate("prompt")
 
     assert text == "hello world"
@@ -60,7 +60,7 @@ def test_generate_raises_after_max_retries():
         model.generate_content.side_effect = Exception("503 transient")
         genai.GenerativeModel.return_value = model
 
-        client = GeminiClient(api_key="k", model_name="gemini-2.5-flash", max_retries=3)
+        client = GeminiClient(api_key="k", model_name="gemini-3.1-flash-lite", max_retries=3)
         with pytest.raises(GeminiError):
             client.generate("prompt")
 

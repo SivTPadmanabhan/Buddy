@@ -16,7 +16,7 @@ class GeminiClient:
     def __init__(
         self,
         api_key: str,
-        model_name: str = "gemini-2.0-flash",
+        model_name: str = "gemini-3.1-flash-lite",
         max_retries: int = 3,
         initial_backoff: float = 1.0,
     ):
