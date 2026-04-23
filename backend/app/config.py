@@ -43,6 +43,11 @@ class Settings(BaseSettings):
 
     usage_file_path: str = "data/usage.json"
 
+    semantic_breakpoint_type: str = "percentile"
+    semantic_breakpoint_threshold: float = 90.0
+    structured_chunk_size: int = 500
+    structured_chunk_overlap: int = 50
+
     @classmethod
     def settings_customise_sources(
         cls,

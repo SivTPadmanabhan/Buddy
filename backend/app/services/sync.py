@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from app.logging_config import get_logger
-from app.services.document import chunk_text, load_bytes
+from app.services.document import load_bytes, semantic_chunk
 from app.services.drive import DriveService, FileMetadata
 from app.services.embeddings import Embedder
 from app.services.usage import UsageTracker
@@ -95,21 +95,20 @@ class SyncService:
                     result.files_skipped += 1
                     continue
 
-                chunks = chunk_text(text)
-                vectors = self._embedder.embed_batch([c for c in chunks])
+                chunk_results = semantic_chunk(text, meta.mime_type, self._embedder)
 
                 records = [
                     ChunkRecord(
-                        id=f"{meta.id}::{i}",
-                        vector=vec,
+                        id=f"{meta.id}::{cr.chunk_index}",
+                        vector=cr.vector,
                         metadata={
                             "source_file": meta.name,
                             "file_id": meta.id,
-                            "chunk_index": i,
-                            "text": chunk[:500],
+                            "chunk_index": cr.chunk_index,
+                            "text": cr.text[:500],
                         },
                     )
-                    for i, (chunk, vec) in enumerate(zip(chunks, vectors))
+                    for cr in chunk_results
                 ]
 
                 self._vectorstore.delete_by_source(meta.name)

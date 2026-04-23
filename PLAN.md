@@ -694,6 +694,76 @@ The frontend sends recent conversation history with each request. The backend co
 
 ---
 
+## Phase 13: Semantic Chunking Migration (Post-Deployment)
+
+**Goal**: Replace fixed-size token-window chunking with LangChain's SemanticChunker for better retrieval quality.
+
+**Design spec**: `docs/superpowers/specs/2026-04-23-semantic-chunking-design.md`
+
+### Steps
+
+13.1. **Install LangChain dependencies**
+- Add `langchain-experimental`, `langchain-text-splitters`, `langchain-core` to `requirements.txt`
+- Remove `tiktoken` from `requirements.txt`
+- Verify Docker build succeeds
+
+13.2. **Create LangChain Embeddings Adapter**
+- New file: `backend/app/services/langchain_embeddings.py`
+- Wrap existing `Embedder` class in LangChain `Embeddings` interface
+- `embed_documents()` delegates to `embedder.embed_batch()`
+- `embed_query()` delegates to `embedder.embed_text()`
+- Tests: adapter delegates correctly, same model instance reused
+
+13.3. **Create content-aware pre-processor**
+- New file: `backend/app/services/text_preprocessor.py`
+- `preprocess_for_chunking(text, mime_type)` → list of `ContentBlock`
+- Detect tables (tab separators, pipe columns), code (fences, indentation), OCR artifacts
+- Mark structured blocks `skip_semantic=True`, prose blocks `False`
+- Tests: detection for each block type, mixed content ordering
+
+13.4. **Implement `semantic_chunk` function**
+- New function in `document.py`: `semantic_chunk(text, mime_type, embedder) → list[ChunkResult]`
+- `ChunkResult` dataclass: `text`, `vector`, `chunk_index`
+- Prose blocks → `SemanticChunker` (percentile breakpoint, threshold 90.0)
+- Structured blocks → `RecursiveCharacterTextSplitter` (content-appropriate separators)
+- Embed final chunks and return vectors alongside text
+- Tests: routing, vector inclusion, document order preservation
+
+13.5. **Remove `chunk_text` and update sync pipeline**
+- Delete `chunk_text()` from `document.py`
+- Update `sync.py`: replace `chunk_text()` + `embed_batch()` with single `semantic_chunk()` call
+- Update record building to use `ChunkResult.text` and `ChunkResult.vector`
+- Update all tests referencing `chunk_text`
+
+13.6. **Add configuration to `config.py`**
+- `semantic_breakpoint_type: str = "percentile"`
+- `semantic_breakpoint_threshold: float = 90.0`
+- `structured_chunk_size: int = 500`
+- `structured_chunk_overlap: int = 50`
+
+13.7. **Integration testing**
+- Feed real mixed doc (prose + table + code) through full pipeline
+- Verify chunks are coherent with 384-dim vectors
+- Run full sync, verify Pinecone indexing works end-to-end
+
+13.8. **Re-index existing documents**
+- Clear Pinecone index (via console)
+- Trigger full re-sync via `POST /sync`
+- Verify retrieval quality on known queries
+
+### Checkpoint 13
+- [ ] LangChain adapter reuses existing Embedder model instance
+- [ ] Pre-processor correctly classifies tables, code, OCR, and prose
+- [ ] Prose chunks align with topic boundaries (semantic splits)
+- [ ] Structured content chunked by rows/lines (not sentence-split)
+- [ ] `chunk_text` fully removed, no tiktoken dependency
+- [ ] Sync pipeline produces ChunkResults with embedded vectors
+- [ ] All existing tests updated and passing
+- [ ] Full re-sync completes successfully
+- [ ] Retrieval quality improved on mixed-content queries
+
+---
+
 ## Summary
 
 | Phase | Description | Key Skill |
@@ -711,6 +781,7 @@ The frontend sends recent conversation history with each request. The backend co
 | 10 | Frontend components | frontend |
 | 11 | Integration & polish | - |
 | 12 | Documentation | - |
+| 13 | Semantic chunking migration | tdd |
 
 ## Safety Limits Summary
 

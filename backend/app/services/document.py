@@ -1,13 +1,18 @@
 import io
+from dataclasses import dataclass
 from typing import Callable
 
-import tiktoken
 from docx import Document as DocxDocument
+from langchain_experimental.text_splitter import SemanticChunker
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from openpyxl import load_workbook
 from pptx import Presentation
 from pypdf import PdfReader
 
 from app.logging_config import get_logger
+from app.services.embeddings import Embedder
+from app.services.langchain_embeddings import LangChainEmbeddingsAdapter
+from app.services.text_preprocessor import preprocess_for_chunking
 
 log = get_logger("app.services.document")
 
@@ -18,15 +23,20 @@ XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 TEXT_MIMES = {"text/plain", "text/csv", "text/markdown"}
 IMAGE_MIMES = {"image/png", "image/jpeg", "image/jpg"}
 
-_ENCODING = tiktoken.get_encoding("cl100k_base")
-
 
 class UnsupportedFileType(Exception):
     pass
 
 
+@dataclass
+class ChunkResult:
+    text: str
+    vector: list[float]
+    chunk_index: int
+
+
 def load_text(content: bytes) -> str:
-    return content.decode("utf-8", errors="replace").lstrip("\ufeff")
+    return content.decode("utf-8", errors="replace").lstrip("﻿")
 
 
 def load_pdf(content: bytes) -> str:
@@ -66,30 +76,59 @@ def load_xlsx(content: bytes) -> str:
     return "\n".join(lines)
 
 
-def chunk_text(
-    text: str, chunk_tokens: int = 500, overlap_tokens: int = 50
-) -> list[str]:
+def semantic_chunk(
+    text: str,
+    mime_type: str,
+    embedder: Embedder,
+    breakpoint_type: str = "percentile",
+    breakpoint_threshold: float = 90.0,
+    structured_chunk_size: int = 500,
+    structured_chunk_overlap: int = 50,
+) -> list[ChunkResult]:
     text = text.strip()
     if not text:
         return []
 
-    tokens = _ENCODING.encode(text)
-    if len(tokens) <= chunk_tokens:
-        return [text]
+    blocks = preprocess_for_chunking(text, mime_type)
+    if not blocks:
+        return []
 
-    step = chunk_tokens - overlap_tokens
-    if step <= 0:
-        raise ValueError("overlap_tokens must be smaller than chunk_tokens")
+    adapter = LangChainEmbeddingsAdapter(embedder)
+    results: list[ChunkResult] = []
+    index = 0
 
-    chunks: list[str] = []
-    start = 0
-    while start < len(tokens):
-        window = tokens[start : start + chunk_tokens]
-        chunks.append(_ENCODING.decode(window))
-        if start + chunk_tokens >= len(tokens):
-            break
-        start += step
-    return chunks
+    for block in blocks:
+        if block.skip_semantic:
+            separators = ["\n"] if block.block_type == "table" else ["\n\n", "\n", " "]
+            splitter = RecursiveCharacterTextSplitter(
+                separators=separators,
+                chunk_size=structured_chunk_size,
+                chunk_overlap=structured_chunk_overlap,
+                length_function=len,
+            )
+            chunk_texts = splitter.split_text(block.text)
+        else:
+            chunker = SemanticChunker(
+                embeddings=adapter,
+                breakpoint_threshold_type=breakpoint_type,
+                breakpoint_threshold_amount=breakpoint_threshold,
+            )
+            docs = chunker.create_documents([block.text])
+            chunk_texts = [doc.page_content for doc in docs]
+
+        if not chunk_texts:
+            continue
+
+        vectors = embedder.embed_batch(chunk_texts)
+        for ct, vector in zip(chunk_texts, vectors):
+            results.append(ChunkResult(
+                text=ct,
+                vector=vector,
+                chunk_index=index,
+            ))
+            index += 1
+
+    return results
 
 
 def _import_ocr() -> Callable[[bytes], str]:

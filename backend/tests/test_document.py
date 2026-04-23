@@ -12,7 +12,6 @@ from app.services.document import (
     PPTX_MIME,
     XLSX_MIME,
     UnsupportedFileType,
-    chunk_text,
     load_bytes,
     load_docx,
     load_pdf,
@@ -98,28 +97,6 @@ def test_load_pdf_extracts_text():
     result = load_pdf(buf.getvalue())
     assert isinstance(result, str)
 
-
-def test_chunk_text_produces_chunks_of_bounded_size():
-    text = "word " * 2000  # ~2000 tokens roughly
-    chunks = chunk_text(text, chunk_tokens=500, overlap_tokens=50)
-    assert len(chunks) >= 3
-    for c in chunks:
-        # tiktoken cl100k_base token count roughly <= 500
-        assert len(c) > 0
-
-
-def test_chunk_text_overlap_preserves_continuity():
-    text = " ".join(f"w{i}" for i in range(600))
-    chunks = chunk_text(text, chunk_tokens=200, overlap_tokens=40)
-    # Last 40 tokens of chunk[0] should overlap with start of chunk[1]
-    assert len(chunks) >= 2
-    tail = " ".join(chunks[0].split()[-10:])
-    assert tail.split()[0] in chunks[1]
-
-
-def test_chunk_text_short_input_single_chunk():
-    text = "hello world"
-    assert chunk_text(text, chunk_tokens=500) == ["hello world"]
 
 
 def test_load_bytes_routes_by_mime():

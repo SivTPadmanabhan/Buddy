@@ -3,6 +3,7 @@ import json
 
 import pytest
 
+from app.services.document import ChunkResult
 from app.services.drive import FileMetadata
 from app.services.sync import SyncService, SyncResult
 from app.services.usage import UsageTracker
@@ -14,6 +15,11 @@ LIMITS = {
     "gemini_tokens": 500000,
     "pinecone_vectors": 100,
 }
+
+FAKE_CHUNK_RESULTS = [
+    ChunkResult(text="chunk 0", vector=[0.1] * 384, chunk_index=0),
+    ChunkResult(text="chunk 1", vector=[0.2] * 384, chunk_index=1),
+]
 
 
 @pytest.fixture
@@ -57,7 +63,7 @@ def vectorstore():
 @pytest.fixture
 def svc(drive, embedder, vectorstore, tracker, sync_state_path):
     with patch("app.services.sync.load_bytes", return_value="Some parsed text that is long enough to chunk."), \
-         patch("app.services.sync.chunk_text", return_value=["chunk 0", "chunk 1"]):
+         patch("app.services.sync.semantic_chunk", return_value=FAKE_CHUNK_RESULTS):
         s = SyncService(
             drive=drive,
             embedder=embedder,
@@ -77,7 +83,6 @@ def test_full_sync_processes_all_files(svc, drive, embedder, vectorstore, sync_s
     assert result.chunks_upserted >= 2
     assert drive.list_files.call_count == 1
     assert drive.download_file.call_count == 2
-    assert embedder.embed_batch.call_count >= 1
     assert vectorstore.upsert_chunks.call_count >= 1
 
     # State persisted
@@ -92,7 +97,6 @@ def test_incremental_sync_skips_unchanged(svc, drive, embedder, vectorstore, syn
 
     # Second sync — same files, same md5
     drive.download_file.reset_mock()
-    embedder.embed_batch.reset_mock()
     vectorstore.upsert_chunks.reset_mock()
 
     result = svc.run_sync()
@@ -123,14 +127,15 @@ def test_incremental_sync_reprocesses_changed_file(svc, drive, embedder, vectors
 
 
 def test_sync_stops_at_vector_limit(drive, embedder, vectorstore, tracker, sync_state_path):
-    # Fill up near vector limit
     for _ in range(10):
-        tracker.record_usage("pinecone_vectors", 10)  # used = 100, at cap
+        tracker.record_usage("pinecone_vectors", 10)
 
     vectorstore.upsert_chunks.side_effect = VectorLimitExceeded("limit")
 
     with patch("app.services.sync.load_bytes", return_value="text"), \
-         patch("app.services.sync.chunk_text", return_value=["chunk 0"]):
+         patch("app.services.sync.semantic_chunk", return_value=[
+             ChunkResult(text="chunk 0", vector=[0.1] * 384, chunk_index=0),
+         ]):
         svc = SyncService(
             drive=drive, embedder=embedder, vectorstore=vectorstore,
             usage_tracker=tracker, folder_ids=["folder_a"],
@@ -143,7 +148,9 @@ def test_sync_stops_at_vector_limit(drive, embedder, vectorstore, tracker, sync_
 
 def test_sync_state_persists_across_instances(drive, embedder, vectorstore, tracker, sync_state_path):
     with patch("app.services.sync.load_bytes", return_value="text"), \
-         patch("app.services.sync.chunk_text", return_value=["chunk 0"]):
+         patch("app.services.sync.semantic_chunk", return_value=[
+             ChunkResult(text="chunk 0", vector=[0.1] * 384, chunk_index=0),
+         ]):
         svc1 = SyncService(
             drive=drive, embedder=embedder, vectorstore=vectorstore,
             usage_tracker=tracker, folder_ids=["folder_a"],
