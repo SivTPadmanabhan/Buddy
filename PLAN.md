@@ -313,7 +313,7 @@ pinecone_max_vectors: int = 80000      # Free tier: 100K
 - Source citation format
 
 7.4. **Gemini integration**
-- Use google-generativeai SDK (model: gemini-3.1-flash-lite)
+- Use google-generativeai SDK (model: gemini-3.1-flash-lite-preview)
 - Handle rate limiting with exponential backoff retry
 - Track tokens from response
 

@@ -1,6 +1,6 @@
 import time
 
-import google.generativeai as genai
+from google import genai
 
 from app.logging_config import get_logger
 
@@ -16,21 +16,23 @@ class GeminiClient:
     def __init__(
         self,
         api_key: str,
-        model_name: str = "gemini-3.1-flash-lite",
+        model_name: str = "gemini-3.1-flash-lite-preview",
         max_retries: int = 3,
         initial_backoff: float = 1.0,
     ):
         self._model_name = model_name
         self._max_retries = max_retries
         self._initial_backoff = initial_backoff
-        genai.configure(api_key=api_key)
-        self._model = genai.GenerativeModel(model_name)
+        self._client = genai.Client(api_key=api_key)
 
     def generate(self, prompt: str) -> tuple[str, int, int]:
         last_error: Exception | None = None
         for attempt in range(self._max_retries):
             try:
-                response = self._model.generate_content(prompt)
+                response = self._client.models.generate_content(
+                    model=self._model_name,
+                    contents=prompt,
+                )
                 usage = getattr(response, "usage_metadata", None)
                 input_tokens = int(getattr(usage, "prompt_token_count", 0) or 0)
                 output_tokens = int(getattr(usage, "candidates_token_count", 0) or 0)
