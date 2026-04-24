@@ -25,6 +25,12 @@ export function useChat() {
 
   const clearError = useCallback(() => setError(null), []);
 
+  const clearChat = useCallback(() => {
+    setMessages([]);
+    setError(null);
+    setLimitReached(false);
+  }, []);
+
   const sendMessage = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
@@ -67,5 +73,5 @@ export function useChat() {
     sendMessage(lastUserMsg.content);
   }, [sendMessage]);
 
-  return { messages, isLoading, error, limitReached, sendMessage, clearError, retry, bottomRef };
+  return { messages, isLoading, error, limitReached, sendMessage, clearError, clearChat, retry, bottomRef };
 }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { PawPrint, X, RotateCcw } from "lucide-react";
+import ConfirmDialog from "./components/ConfirmDialog";
 import { motion, AnimatePresence } from "motion/react";
 import { getInitialTheme, applyTheme } from "./api/theme";
 import { useChat } from "./hooks/useChat";
@@ -12,7 +13,8 @@ import LoadingIndicator from "./components/LoadingIndicator";
 export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">(getInitialTheme);
   const [inputText, setInputText] = useState("");
-  const { messages, isLoading, error, limitReached, sendMessage, clearError, retry, bottomRef } = useChat();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const { messages, isLoading, error, limitReached, sendMessage, clearError, clearChat, retry, bottomRef } = useChat();
   const { isSyncing, lastSync, syncError, clearSyncError, triggerSync } = useSync();
 
   useEffect(() => {
@@ -28,6 +30,17 @@ export default function App() {
     setInputText("");
   }, [sendMessage]);
 
+  const handleNewChat = useCallback(() => {
+    if (messages.length === 0) return;
+    setConfirmOpen(true);
+  }, [messages.length]);
+
+  const handleConfirmNewChat = useCallback(() => {
+    clearChat();
+    setInputText("");
+    setConfirmOpen(false);
+  }, [clearChat]);
+
   const isEmpty = messages.length === 0;
 
   return (
@@ -37,6 +50,7 @@ export default function App() {
         onToggleTheme={toggleTheme}
         isSyncing={isSyncing}
         onSync={triggerSync}
+        onNewChat={handleNewChat}
         lastSync={lastSync}
       />
 
@@ -77,6 +91,15 @@ export default function App() {
         onSend={handleSend}
         disabled={limitReached || isLoading}
         limitReached={limitReached}
+      />
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Start new chat?"
+        message="This will clear the current conversation."
+        confirmLabel="New Chat"
+        onConfirm={handleConfirmNewChat}
+        onCancel={() => setConfirmOpen(false)}
       />
     </div>
   );

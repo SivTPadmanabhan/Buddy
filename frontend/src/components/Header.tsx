@@ -1,4 +1,4 @@
-import { RefreshCw, Sun, Moon, BarChart3, PawPrint } from "lucide-react";
+import { RefreshCw, Sun, Moon, BarChart3, PawPrint, SquarePen } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import type { UsageStatus } from "../api/client";
@@ -9,10 +9,11 @@ interface HeaderProps {
   onToggleTheme: () => void;
   isSyncing: boolean;
   onSync: () => void;
+  onNewChat: () => void;
   lastSync: string | null;
 }
 
-export default function Header({ theme, onToggleTheme, isSyncing, onSync, lastSync }: HeaderProps) {
+export default function Header({ theme, onToggleTheme, isSyncing, onSync, onNewChat, lastSync }: HeaderProps) {
   const [usageOpen, setUsageOpen] = useState(false);
   const [usage, setUsage] = useState<UsageStatus | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -38,9 +39,31 @@ export default function Header({ theme, onToggleTheme, isSyncing, onSync, lastSy
   return (
     <header className="sticky top-0 z-50 border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
       <div className="max-w-3xl mx-auto flex items-center justify-between px-4 h-14">
-        <div className="flex items-center gap-2.5">
-          <PawPrint size={20} className="text-emerald-deep dark:text-emerald-accent" />
-          <span className="text-lg font-semibold tracking-tight">Buddy</span>
+        <div className="flex items-center gap-2">
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={onNewChat}
+            className="flex items-center gap-2.5 px-1 py-1 -ml-1 rounded-lg
+                       glow-hover hover:border-emerald-border
+                       border border-transparent transition-colors cursor-pointer"
+            title="New chat"
+          >
+            <PawPrint size={20} className="text-emerald-deep dark:text-emerald-accent" />
+            <span className="text-lg font-semibold tracking-tight">Buddy</span>
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onNewChat}
+            className="p-2 rounded-lg text-neutral-600 dark:text-neutral-400
+                       border border-transparent glow-hover
+                       hover:border-emerald-border transition-colors"
+            title="New chat"
+          >
+            <SquarePen size={15} />
+          </motion.button>
         </div>
 
         <div className="flex items-center gap-1">
